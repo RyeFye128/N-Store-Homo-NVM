@@ -2,7 +2,11 @@
 
 #include "ycsb_benchmark.h"
 
+int reads, updates, records;
+
 namespace storage {
+
+
 
 class usertable_record : public record {
  public:
@@ -87,7 +91,6 @@ ycsb_benchmark::ycsb_benchmark(config _conf, unsigned int tid, database* _db,
 
     table* usertable = create_usertable(conf);
     db->tables->push_back(usertable);
-
     sp->init = 1;
   } else {
     //cout << "Recovery Mode " << endl;
@@ -119,7 +122,7 @@ ycsb_benchmark::ycsb_benchmark(config _conf, unsigned int tid, database* _db,
 
 }
 
-//Where the goods happen
+//Initial record insertion
 void ycsb_benchmark::load() {
   engine* ee = new engine(conf, tid, db, false);
   
@@ -128,9 +131,9 @@ void ycsb_benchmark::load() {
   status ss(num_keys);
 
   ee->txn_begin();
-
+  //iterate through all the keys in the database
   for (txn_itr = 0; txn_itr < num_keys; txn_itr++) {
-
+    //Time to commit the transaction?
     if (txn_itr % conf.load_batch_size == 0) {
       ee->txn_end(true);
       txn_id++;
@@ -142,14 +145,17 @@ void ycsb_benchmark::load() {
     //the value is a random char (see config) of size ycsb_field_size
     std::string value = get_rand_astring(conf.ycsb_field_size);
 
-    std::cout << "New record key has a value of " << value << " and a size of " << value.size() << std::endl;
+     //std::cout << "New record key has a value of " << value << " and a size of " << value.size() << std::endl;
     //The record contains a numerical key, from 0 to n.
     record* rec_ptr = new ((record*) pmalloc(sizeof(usertable_record))) usertable_record(usertable_schema, key, value,
-                                           					conf.ycsb_num_val_fields, false);
-
-    statement st(txn_id, operation_type::Insert, USER_TABLE_ID, rec_ptr);
-
+                                    					conf.ycsb_num_val_fields, false);
+     
+    //CALL SIM CRASH HERE. Record is created with a ptr, but not committed.
+    statement st(txn_id, operation_type::Insert, USER_TABLE_ID, rec_ptr);//INSERTION OPERATION
+    //std::cout << "New record is ";
+    //rec_ptr->display();
     ee->load(st);
+    records++;
 
     if (tid == 0)
       ss.display();
@@ -178,6 +184,7 @@ void ycsb_benchmark::do_update(engine* ee) {
                                            					conf.ycsb_num_val_fields,
                                            					conf.ycsb_update_one);
 
+    
     statement st(txn_id, operation_type::Update, USER_TABLE_ID, rec_ptr,
                  update_field_ids);
 
@@ -186,14 +193,18 @@ void ycsb_benchmark::do_update(engine* ee) {
       TIMER(ee->txn_end(false))
       return;
     }
+   // std::cout << "Updating some stuff...";
+    updates++;
+    //rec_ptr->display();
   }
-
+  //std::cout << "Done updating some stuff...";
   TIMER(ee->txn_end(true))
 }
 
 void ycsb_benchmark::do_read(engine* ee) {
 
 // SELECT
+  
   int zipf_dist_offset = txn_id * conf.ycsb_tuples_per_txn;
   txn_id++;
   std::string empty;
@@ -207,13 +218,15 @@ void ycsb_benchmark::do_read(engine* ee) {
 
     record* rec_ptr = new usertable_record(user_table_schema, key, empty,
                                            conf.ycsb_num_val_fields, false);
-
+    
     statement st(txn_id, operation_type::Select, USER_TABLE_ID, rec_ptr, 0,
                  user_table_schema);
-
+   // std::cout << "Reading some stuff...";
+    reads++;
+    //rec_ptr->display();
     TIMER(ee->select(st))
   }
-
+  //std::cout << "Done reading stuff...";
   TIMER(ee->txn_end(true))
 }
 
@@ -225,8 +238,11 @@ void ycsb_benchmark::sim_crash() {
   std::vector<int> field_ids;
 
 //Takes a vector and appends 1,2,3,4,5.....number of ???
-  for (int itr = 1; itr <= conf.ycsb_num_val_fields; itr++)
+//ends with 1,2,3,4...n
+  for (int itr = 1; itr <= conf.ycsb_num_val_fields; itr++) {
     field_ids.push_back(itr);
+     //fstd::cout << "Vector contains, at the start: " << field_ids.front() << " at the end: " << field_ids.back() << std::endl;
+  }
 
 //create a string, and add # x's equivalent to the field size.
   std::string updated_val(conf.ycsb_field_size, 'x');// (int, char)
@@ -250,23 +266,40 @@ void ycsb_benchmark::sim_crash() {
 //Go through all tuples per txn
 
       int key = zipf_dist[zipf_dist_offset + stmt_itr];
-
+      std::cout << "insert bad record at position " << key << std::endl;
       //create a new record, same as constructor but with updated_val
+      //Inserts updated_val into each field
       record* rec_ptr = new usertable_record(user_table_schema, key,
                                              updated_val,
                                              conf.ycsb_num_val_fields,
                                              conf.ycsb_update_one);
+      
 
       statement st(txn_id, operation_type::Update, USER_TABLE_ID, rec_ptr,
                    field_ids);
-
+    
+      //std::cout << "Updating field with id " << field_ids
       ee->update(st);
+      //std::cout << "Record before recovery is ";
+    //rec_ptr->display();
+    
     }
   }
-
+  
   // Recover
   ee->recovery();
   delete ee;
+}
+void ycsb_benchmark::printTable(engine* ee)
+{
+  std::string empty;
+  int recordNum = 1;
+  record* rec_ptr = new usertable_record(user_table_schema, recordNum, empty,
+                                           conf.ycsb_num_val_fields, false);
+  statement st(txn_id, operation_type::Select, USER_TABLE_ID, rec_ptr, 0,
+                 user_table_schema);
+  std::string val = ee->select(st);
+  std::cout << val.c_str();
 }
 
 void ycsb_benchmark::execute() {
@@ -276,10 +309,13 @@ void ycsb_benchmark::execute() {
 
   std::cout << "num_txns :::: " << num_txns << std::endl;
   sim_crash();
+
   for (txn_itr = 0; txn_itr < num_txns; txn_itr++) {
     double u = uniform_dist[txn_itr];
-
-    if (u < conf.ycsb_per_writes) {
+   // std::cout << "U is " << u << std::endl;
+    //std::cout << txn_itr << std::endl;
+    //std::cout << num_txns << std::endl;
+    if (u >= conf.ycsb_per_writes) {
       do_update(ee);
     } else {
       do_read(ee);
@@ -288,10 +324,14 @@ void ycsb_benchmark::execute() {
     if (tid == 0)
       ss.display();
   }
-
+  printTable(ee);
   std::cout << "duration :: " << tm->duration() << std::endl;
-
+  std::cout << "Total reads: " << reads << " Total updates: " << updates << " Total Records: " << records <<  std::endl;
   delete ee;
 }
+
+
+
+
 
 }

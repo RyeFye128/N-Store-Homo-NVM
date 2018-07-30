@@ -79,13 +79,13 @@ namespace storage {
     state.verbose = false;
 
     state.gc_interval = 5;
-    state.ycsb_per_writes = 0.1;
+    state.ycsb_per_writes = 0.5;
 
     state.merge_interval = 10000;
     state.merge_ratio = 0.05;
 
     state.etype = engine_type::WAL;
-    state.btype = benchmark_type::TPCC;
+    state.btype = benchmark_type::YCSB;
 
     state.read_only = false;
     state.recovery = false;
@@ -93,8 +93,8 @@ namespace storage {
     state.ycsb_skew = 0.1;
     state.ycsb_update_one = false;
     state.ycsb_field_size = 100;
-    state.ycsb_tuples_per_txn = 1;
-    state.ycsb_num_val_fields = 15; //number of fields in db;
+    state.ycsb_tuples_per_txn = 50;
+    state.ycsb_num_val_fields = 2; //number of fields in db;
 
     state.tpcc_num_warehouses = 2;
     state.tpcc_stock_level_only = false;
@@ -103,6 +103,7 @@ namespace storage {
     state.load_batch_size = 50000;
     state.storage_stats = false;
 
+    
     state.test_benchmark_mode = 0;
 
     // Parse args

@@ -29,6 +29,7 @@ class table {
     indices = new ((plist<table_index*>*) pmalloc(sizeof(plist<table_index*>))) plist<table_index*>(&sp->ptrs[get_next_pp()],
                                       					&sp->ptrs[get_next_pp()]);
     pmemalloc_activate(indices);
+   
 
   }
 
@@ -46,6 +47,7 @@ class table {
     }
   }
 
+ 
   //private:
   char* table_name;
   schema* sptr;
@@ -57,7 +59,12 @@ class table {
   storage fs_data;
 
   plist<record*>* pm_data;
+ 
+
+
 };
+
+
 
 }
 

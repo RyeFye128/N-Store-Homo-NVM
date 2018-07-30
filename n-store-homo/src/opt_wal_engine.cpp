@@ -36,7 +36,7 @@ std::string opt_wal_engine::select(const statement& st) {
   if (select_ptr)
     val = sr.serialize(select_ptr, st.projection);
   LOG_INFO("val : %s", val.c_str());
-
+  //std::cout << "Value is " << val.c_str() << std::endl;
   delete rec_ptr;
   return val;
 }
@@ -85,8 +85,9 @@ int opt_wal_engine::insert(const statement& st) {
     key = hash_fn(key_str);
 
     indices->at(index_itr)->pm_map->insert(key, after_rec);
+   
   }
-
+  
   return EXIT_SUCCESS;
 }
 
@@ -168,7 +169,7 @@ int opt_wal_engine::update(const statement& st) {
   entry_stream.str("");
   entry_stream << st.transaction_id << " " << st.op_type << " " << st.table_id
                << " " << num_fields << " " << before_rec << " ";
-
+  //cycle through all fields...
   for (int field_itr : st.field_ids) {
     // Pointer field
     if (rec_ptr->sptr->columns[field_itr].inlined == 0) {
@@ -242,6 +243,8 @@ void opt_wal_engine::load(const statement& st) {
     key = hash_fn(key_str);
 
     indices->at(index_itr)->pm_map->insert(key, after_rec);
+    std::cout << "Inserting record at row " << key << std::endl;
+    after_rec->display();
   }
 
 }

@@ -1,0 +1,20 @@
+Path to benchmark:
+Main 338
+Coordinator::eval
+Coordinator::execute
+
+Recovery path:
+
+Coordinator:recover
+Benchmark::sim_crash //Virtual method, derived from ycsb or tpcc benchmark cpps.
+Ycsb_benchmark::sim crash
+engine::recovery
+engine_api::recovery //Virtual method, derived from recovery mechanism...
+	WAL, SP, LSM...and their OPT counterparts (OPT_.*)
+	NOTE: Default is WAL
+wal_Engine.cpp::Recovery
+	Recovery Code (log undo) is from line 265 to 394. 
+
+YCSB_benchmark.cpp line 218 is the method to use for crash simulation. it calls the above recovery path. Coordinator.h runs the core of the benchmark and the recovery should be called from there. Need to modify code to remember config, and then run the code from that.
+
+

@@ -1,0 +1,41 @@
+WAL: write ahead logging. All writes are applied to a log and then commited, via transaction. The log maintains information on how to undo in case of a crash.
+LSM: Log-structured merge tree. Uses faster storage media as a sort of buffer. Updates are written to a log file. Uses checkpointing to restore upon a failure. Replay the log up to a certain point, the checkpoint. page 24.
+Sp: may mean stack pointer. Whatever it is, it uses COW
+
+YCSB_benchmark.cpp line 260. The engine::update function causes recovery to hang forever.
+
+Commenting out the update function call causes recovery to actually terminate. However, any benchmark run afterwards fails due to an issue with the pm region. So, it DOES persist between runs.
+
+Opt_* may refer to the nvm-aware engines.
+
+opt_sp_engine.cpp uses a struct with a prefix of "cow".
+
+Set default values and run.sh params the same. -u, which enables a single update, causes the original nstore to violate an assertion and fail. Does not fail in nstore-homo. Removed the -u flag from each and they both run. This flag sets an update_once field to true. In Ycsb_benchmark, the constructor calls assert(0) if it is set to true. So, it will always fail no matter what. nstore-homo does not have this assertion. try removing assertion.
+
+Nstore-homo can recover. Nstore cannot.
+
+
+report: all diferences between the two and explain why.why whisper needs to make these changes. one section
+
+understand homo code and sim crash, the meaning. Explain what sim crash does with confidence. Also what the original recovery workste oringial design then explain whisper differences. verify if recovery is correct or not, depends on corruption mechanism. understand sim crash and then write a similar tool to corrupt it.
+
+two sections: one on whisper and one on homo
+
+write own workload, under my control with any amount and content of key value pairs.
+inject corruption ( look at sim crash)
+	just make it inconsistent
+then run recovery (theirs)
+then print table and see
+
+Engine::recovery runs recovery and then resumes the workload. Recovery simply undoes the log.
+
+NOTE: Calling sim_crash causes the reported throughput value to be wrong (11111.111 or 33333.333... etc...)
+
+INITIALIZATION OF TABLE:
+Records are created and inserted. The key is a numerical value from 0 to n. The value is assigned randomly [a-z][A-Z][0-9] with the number of chars equal to the ycsb_field_size. The record is created with n fields, each of which are populated with the same random variable. The pointer to the new record gets passed into its statement.h, and then engine::load is where the record is inserted. Statement.h identifies which statment (ins, del, upd, sel) and sets the proper vars. Then, engine::load logs the op and then activates the record.
+
+A statement consists of operations: insert, delete, update, and select.
+
+engine::load is where the statments are executed. Should fault inject here.
+
+

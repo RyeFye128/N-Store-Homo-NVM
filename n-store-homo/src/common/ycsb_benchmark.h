@@ -29,6 +29,8 @@ class ycsb_benchmark : public benchmark {
   void do_update(engine* ee);
   void do_read(engine* ee);
 
+  void printTable(engine* ee); //RAC
+
   // Table Ids
   static constexpr int USER_TABLE_ID = 0;
 

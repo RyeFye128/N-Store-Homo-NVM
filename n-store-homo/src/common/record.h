@@ -36,12 +36,13 @@ class record {
     }
   }
 
+  //prints the fields of the record
   void display() {
     std::string data;
 
     unsigned int field_itr;
     for (field_itr = 0; field_itr < sptr->num_columns; field_itr++)
-      data += get_data(field_itr) + " ";
+      data += get_data(field_itr) + " " + '\n';
 
     printf("record : %p %s \n", this, data.c_str());
 

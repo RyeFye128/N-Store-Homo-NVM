@@ -3,6 +3,7 @@
 #include <vector>
 #include "libpm.h"
 
+
 namespace storage {
 
 // Persistent list for storing pointers
@@ -27,18 +28,21 @@ class plist {
     tail = (struct node**) pmalloc(sizeof(struct node*));//new (struct node*);
     (*head) = NULL;
     (*tail) = NULL;
+    
   }
 
   plist(void** _head, void** _tail) {
     head = (struct node**) _head;
     tail = (struct node**) _tail;
     activate = true;
+      
   }
 
   plist(void** _head, void** _tail, bool _activate) {
     head = (struct node**) _head;
     tail = (struct node**) _tail;
     activate = _activate;
+    
   }
 
   ~plist() {
@@ -195,7 +199,8 @@ class plist {
     }
 
     while (np) {
-      printf("%p %s", np->val, np->val);
+      std::cout << np->val << '\n';
+      //printf("%p %s", np->val, np->val);
       np = np->next;
     }
     std::cout << std::endl;

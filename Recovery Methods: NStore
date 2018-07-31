@@ -32,7 +32,7 @@ Engine::recovery runs recovery and then resumes the workload. Recovery simply un
 NOTE: Calling sim_crash causes the reported throughput value to be wrong (11111.111 or 33333.333... etc...)
 
 INITIALIZATION OF TABLE:
-Records are created and inserted. The key is a numerical value from 0 to n. The value is assigned randomly [a-z][A-Z][0-9] with the number of chars equal to the ycsb_field_size. The record is created with n fields, each of which are populated with the same random variable. The pointer to the new record gets passed into its statement.h, and then engine::load is where the record is inserted. Statement.h identifies which statment (ins, del, upd, sel) and sets the proper vars. Then, engine::load logs the op and then activates the record.
+Records are created and inserted. The key is a numerical value from 0 to n. The value is meant to be assigned randomly [a-z][A-Z][0-9] with the number of chars equal to the ycsb_field_size. It is not random,it is the same "random" sequence each execution. The record is created with n fields, each of which are populated with the same random variable. The pointer to the new record gets passed into its statement.h, and then engine::load is where the record is inserted. Statement.h identifies which statment (ins, del, upd, sel) and sets the proper vars. Then, engine::load logs the op and then activates the record.
 
 A statement consists of operations: insert, delete, update, and select.
 

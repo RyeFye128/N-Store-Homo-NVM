@@ -1,6 +1,7 @@
 // YCSB BENCHMARK
 
 #include "ycsb_benchmark.h"
+#include <ctime>
 
 int reads, updates, records;
 
@@ -142,8 +143,9 @@ void ycsb_benchmark::load() {
 
     // LOAD
     int key = txn_itr;
-    //the value is a random char (see config) of size ycsb_field_size
+    //the value is a char (see utils.cpp) of size ycsb_field_size. not truely random
     std::string value = get_rand_astring(conf.ycsb_field_size);
+    std::cout << "f size " << conf.ycsb_field_size << std::endl;
 
      //std::cout << "New record key has a value of " << value << " and a size of " << value.size() << std::endl;
     //The record contains a numerical key, from 0 to n.
@@ -231,7 +233,9 @@ void ycsb_benchmark::do_read(engine* ee) {
 }
 
 void ycsb_benchmark::sim_crash() {
+  
   engine* ee = new engine(conf, tid, db, conf.read_only);
+  printTable(ee, "Pre sim crash");
   unsigned int txn_itr;
 
   // UPDATE
@@ -266,7 +270,7 @@ void ycsb_benchmark::sim_crash() {
 //Go through all tuples per txn
 
       int key = zipf_dist[zipf_dist_offset + stmt_itr];
-      std::cout << "insert bad record at position " << key << std::endl;
+      //std::cout << "insert bad record at position " << key << std::endl;
       //create a new record, same as constructor but with updated_val
       //Inserts updated_val into each field
       record* rec_ptr = new usertable_record(user_table_schema, key,
@@ -287,19 +291,23 @@ void ycsb_benchmark::sim_crash() {
   }
   
   // Recover
+  printTable(ee, "About to recover");
   ee->recovery();
   delete ee;
 }
-void ycsb_benchmark::printTable(engine* ee)
+void ycsb_benchmark::printTable(engine* ee, std::string message)
 {
-  std::string empty;
-  int recordNum = 1;
-  record* rec_ptr = new usertable_record(user_table_schema, recordNum, empty,
+  std::cout <<"Printing table..." << message << std::endl;
+   std::string empty;//what does it do?
+  for(unsigned int i = 0; i <= num_keys; i++)
+  {
+    record* rec_ptr = new usertable_record(user_table_schema, i, empty,
                                            conf.ycsb_num_val_fields, false);
-  statement st(txn_id, operation_type::Select, USER_TABLE_ID, rec_ptr, 0,
+    statement st(txn_id, operation_type::Select, USER_TABLE_ID, rec_ptr, 0,
                  user_table_schema);
-  std::string val = ee->select(st);
-  std::cout << val.c_str();
+    std::string val = ee->select(st);
+    std::cout << val.c_str() << std::endl;
+  }
 }
 
 void ycsb_benchmark::execute() {
@@ -308,7 +316,7 @@ void ycsb_benchmark::execute() {
   status ss(num_txns);
 
   std::cout << "num_txns :::: " << num_txns << std::endl;
-  sim_crash();
+  //sim_crash();
 
   for (txn_itr = 0; txn_itr < num_txns; txn_itr++) {
     double u = uniform_dist[txn_itr];
@@ -324,7 +332,7 @@ void ycsb_benchmark::execute() {
     if (tid == 0)
       ss.display();
   }
-  printTable(ee);
+  printTable(ee, "post recovery");
   std::cout << "duration :: " << tm->duration() << std::endl;
   std::cout << "Total reads: " << reads << " Total updates: " << updates << " Total Records: " << records <<  std::endl;
   delete ee;

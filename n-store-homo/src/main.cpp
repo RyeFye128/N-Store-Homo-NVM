@@ -94,7 +94,7 @@ namespace storage {
     state.ycsb_update_one = false;
     state.ycsb_field_size = 100;
     state.ycsb_tuples_per_txn = 50;
-    state.ycsb_num_val_fields = 2; //number of fields in db;
+    state.ycsb_num_val_fields = 1; //number of fields in db;
 
     state.tpcc_num_warehouses = 2;
     state.tpcc_stock_level_only = false;

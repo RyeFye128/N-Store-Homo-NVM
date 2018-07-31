@@ -11,18 +11,21 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+
 #include "utils.h"
 #include "record.h"
 
 namespace storage {
 
-    // RAND GEN
+    // RAND GEN? Gives same seq across executions.
     std::string get_rand_astring(size_t len) {
         static const char alphanum[] = "0123456789"
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
             "abcdefghijklmnopqrstuvwxyz";
+        
 
         char rep = alphanum[rand() % (sizeof(alphanum) - 1)];
+	//std::cout << "random char is " << rep << std::endl;
         std::string str(len, rep);
         return str;
     }

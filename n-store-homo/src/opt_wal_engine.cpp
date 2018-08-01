@@ -42,7 +42,7 @@ std::string opt_wal_engine::select(const statement& st) {
 }
 
 int opt_wal_engine::insert(const statement& st) {
-  //LOG_INFO("Insert");
+  LOG_INFO("Insert");
   record* after_rec = st.rec_ptr;
   table* tab = db->tables->at(st.table_id);
   plist<table_index*>* indices = tab->indices;
@@ -243,7 +243,7 @@ void opt_wal_engine::load(const statement& st) {
     key = hash_fn(key_str);
 
     indices->at(index_itr)->pm_map->insert(key, after_rec);
-    std::cout << "Inserting record at row " << key << std::endl;
+    std::cout << "Loading ";
     after_rec->display();
   }
 
@@ -273,7 +273,7 @@ void opt_wal_engine::txn_end(__attribute__((unused)) bool commit) {
 }
 
 void opt_wal_engine::recovery() {
-
+  
   LOG_INFO("OPT WAL recovery");
   std::cout << "In recovery" << std::endl;
   std::vector<char*> undo_log = pm_log->get_data();
@@ -298,6 +298,7 @@ void opt_wal_engine::recovery() {
 
     switch (op_type) {
       case operation_type::Insert:
+        std::cout << "PREPARING TO UNDO AN INSERT OP!!!" << std::endl;
         LOG_INFO("Undo Insert");
         entry >> ptr_str;
         std::sscanf(ptr_str.c_str(), "%p", &after_rec);
@@ -317,6 +318,7 @@ void opt_wal_engine::recovery() {
           indices->at(index_itr)->pm_map->erase(key);
         }
 
+	std::cout << "COMPLETED UNDOING AN INSERT OP!!!" << std::endl;
         // Free after_rec
         after_rec->clear_data();
         delete after_rec;

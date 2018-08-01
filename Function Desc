@@ -1,0 +1,3 @@
+ycsb_benchmark::do_update: for each transaction specified, it updates an amount of records equal to amount of records a transaction can do.
+ycsb_benchmark::do_read: for each transaction specified, it reads an amount of records equal to amount of records a transaction can do.
+Both are called exclusively per transaction. ie: a transaction cannot contain a mixture of read/write.

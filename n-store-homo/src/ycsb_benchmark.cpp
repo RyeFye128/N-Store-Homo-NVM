@@ -94,7 +94,7 @@ ycsb_benchmark::ycsb_benchmark(config _conf, unsigned int tid, database* _db,
     db->tables->push_back(usertable);
     sp->init = 1;
   } else {
-    //cout << "Recovery Mode " << endl;
+    //std::cout << "Recovery Moooooooooode " << std::endl;
     database* db = (database*) sp->ptrs[0]; // We are reusing old tables
     db->reset(conf, tid);
   }
@@ -136,7 +136,8 @@ void ycsb_benchmark::load() {
   for (txn_itr = 0; txn_itr < num_keys; txn_itr++) {
     //Time to commit the transaction?
     if (txn_itr % conf.load_batch_size == 0) {
-      ee->txn_end(true);
+      ee->txn_end(true);//clears the log
+      
       txn_id++;
       ee->txn_begin();
     }
@@ -145,29 +146,30 @@ void ycsb_benchmark::load() {
     int key = txn_itr;
     //the value is a char (see utils.cpp) of size ycsb_field_size. not truely random
     std::string value = get_rand_astring(conf.ycsb_field_size);
-    std::cout << "f size " << conf.ycsb_field_size << std::endl;
+    
 
      //std::cout << "New record key has a value of " << value << " and a size of " << value.size() << std::endl;
     //The record contains a numerical key, from 0 to n.
     record* rec_ptr = new ((record*) pmalloc(sizeof(usertable_record))) usertable_record(usertable_schema, key, value,
-                                    					conf.ycsb_num_val_fields, false);
-     
+                                  					conf.ycsb_num_val_fields, false);
+    
     //CALL SIM CRASH HERE. Record is created with a ptr, but not committed.
     statement st(txn_id, operation_type::Insert, USER_TABLE_ID, rec_ptr);//INSERTION OPERATION
     //std::cout << "New record is ";
     //rec_ptr->display();
     ee->load(st);
     records++;
-
+    sim_crash();
     if (tid == 0)
       ss.display();
   }
   std::cout << conf.ycsb_num_val_fields << " Fields in this " << std::endl;//prints the number of ???
   ee->txn_end(true);
-
+  
   delete ee;
 }
-
+/* Updates records equal to the amount of tuples allowed per transaction.
+*/
 void ycsb_benchmark::do_update(engine* ee) {
 
 // UPDATE
@@ -189,7 +191,7 @@ void ycsb_benchmark::do_update(engine* ee) {
     
     statement st(txn_id, operation_type::Update, USER_TABLE_ID, rec_ptr,
                  update_field_ids);
-
+    std::cout << "Change record at position " << key << std::endl;
     TIMER(rc = ee->update(st))
     if (rc != 0) {
       TIMER(ee->txn_end(false))
@@ -235,7 +237,6 @@ void ycsb_benchmark::do_read(engine* ee) {
 void ycsb_benchmark::sim_crash() {
   
   engine* ee = new engine(conf, tid, db, conf.read_only);
-  printTable(ee, "Pre sim crash");
   unsigned int txn_itr;
 
   // UPDATE
@@ -314,7 +315,7 @@ void ycsb_benchmark::execute() {
   engine* ee = new engine(conf, tid, db, conf.read_only);
   unsigned int txn_itr;
   status ss(num_txns);
-
+  printTable(ee, "Initial Table");
   std::cout << "num_txns :::: " << num_txns << std::endl;
   //sim_crash();
 
@@ -324,7 +325,7 @@ void ycsb_benchmark::execute() {
     //std::cout << txn_itr << std::endl;
     //std::cout << num_txns << std::endl;
     if (u >= conf.ycsb_per_writes) {
-      do_update(ee);
+      do_update(ee);//alters records
     } else {
       do_read(ee);
     }

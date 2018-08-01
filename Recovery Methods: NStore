@@ -38,4 +38,12 @@ A statement consists of operations: insert, delete, update, and select.
 
 engine::load is where the statments are executed. Should fault inject here.
 
+A larger amount of keys yields a larger amount of zipf dist. Tables do not persist between executions.
+
+simcrash updates a random key value pair with the value 'x', then calls recovery. The update doesnt violate anything so im not sure how recovery works. 'x' is included in the random char generator, so a valid key can hold that value.
+
+TODO: insert print statements into engine file to see if recovery actually goes through all code
+
+Simcrash in load: calling sim crash after each record is created and then inserted causes the insertion to be called of, because it crashes in a transaction. This can verified y printing the table after each insert operation. Calling it aftter ee->txn_end() results in no data loss, as the transaction operates as intended. An anaylsis of the undo log using print statements verifies that log does what its supposed to do. I do not believe simcrash to cause any corruption. It does overwrite the record with a record full of 'x', but it doesnt actually commit as its undone. I assume their corruption mechanism is to simply show that anything not commited after simcrash is called is not commited.
+
 

@@ -112,7 +112,7 @@ namespace storage {
     // Parse args
     while (1) {
       int idx = 0;
-      int c = getopt_long(argc, argv, "f:x:k:e:p:g:q:b:U:M:j:svwascmhludyzorint", opts,
+      int c = getopt_long(argc, argv, "f:x:k:e:p:g:q:b:U:M:I:j:svwascmhludyzorint", opts,
                           &idx);
 
       if (c == -1)
@@ -210,6 +210,12 @@ namespace storage {
       case 'U':
 	state.break_on_update = true;
 	state.break_on_at = atoi(optarg);
+	std::cout << "Crashing on Update number " << state.break_on_at << std::endl;
+        break;
+      case 'I':
+	state.break_on_insert = true;
+	state.break_on_at = atoi(optarg);
+	std::cout << "Crashing on Insert number " << state.break_on_at << std::endl;
         break;
       case 'M':
 	state.break_macro = true;

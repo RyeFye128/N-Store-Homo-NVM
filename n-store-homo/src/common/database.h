@@ -26,6 +26,7 @@ class database {
     // LOG
     log = new ((plist<char*>*) pmalloc(sizeof(plist<char*>))) plist<char*>(&sp->ptrs[get_next_pp()], &sp->ptrs[get_next_pp()]);
     pmemalloc_activate(log);
+    std::cout << "Creating Db log at address: " << std::addressof(log) << " Size is " << sizeof(plist<char*>) << "ends at " << std::addressof(log) + sizeof(plist<char*>) << std::endl;
 
     // DIRS
     if (conf.etype == engine_type::SP) {

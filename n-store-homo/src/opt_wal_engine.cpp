@@ -14,6 +14,7 @@ bool _read_only,
   etype = engine_type::OPT_WAL;
   read_only = _read_only;
   pm_log = db->log;
+  //std::cout << "Persistent memory pool starts at: " << std::addressof(pmp) << std::endl;
 
 }
 
@@ -192,9 +193,14 @@ int opt_wal_engine::update(const statement& st) {
   size_t entry_str_sz = entry_str.size() + 1;
   char* entry = (char*) pmalloc(entry_str_sz*sizeof(char));//new char[entry_str_sz];
   memcpy(entry, entry_str.c_str(), entry_str_sz);
-
+  
+  //std::cout << "Log size: " << sizeof(pm_log) << std::endl;
   pmemalloc_activate(entry);
+  //std::cout << "Before" << std::endl;
+  //pm_log->display();
   pm_log->push_back(entry);
+  //std::cout << "After" << std::endl;
+  //pm_log->display();
 
   for (int field_itr : st.field_ids) {
     // Garbage collect previous field
@@ -206,7 +212,9 @@ int opt_wal_engine::update(const statement& st) {
     // Update existing record
     before_rec->set_data(field_itr, rec_ptr);
   }
-
+  //std::cout << "UPDATE - Log entry added at address " << std::addressof(pm_log->display()) << ", size " << sizeof(entry) << std::endl;
+  //std::cout << "Log info:";
+  
   delete rec_ptr;
   return EXIT_SUCCESS;
 }
@@ -229,10 +237,12 @@ void opt_wal_engine::load(const statement& st) {
                << " " << after_rec;
 
   entry_str = entry_stream.str();
+  //std::cout << entry_str << std::endl;
   size_t entry_str_sz = entry_str.size() + 1;
   char* entry = (char*) pmalloc(entry_str_sz*sizeof(char));//new char[entry_str_sz];
   memcpy(entry, entry_str.c_str(), entry_str_sz);
   pmemalloc_activate(entry);
+  std::cout << "INSERT - Log entry added at address " << std::addressof(entry) << std::endl;
   pm_log->push_back(entry);
 
   // Activate new record
@@ -253,6 +263,8 @@ void opt_wal_engine::load(const statement& st) {
 
 void opt_wal_engine::txn_begin() {
 	//std::cout << "The world is a lie" << std::endl;
+	std::cout << "opt_wal_engine - Transaction begin " << std::endl;
+
 }
 
 void opt_wal_engine::txn_end(__attribute__((unused)) bool commit) {
@@ -271,6 +283,7 @@ void opt_wal_engine::txn_end(__attribute__((unused)) bool commit) {
   for (char* ptr : undo_log)
     delete ptr;
   pm_log->clear();
+  std::cout << "opt_wal_engine - Transaction end " << std::endl;
 
 }
 
@@ -401,6 +414,7 @@ void opt_wal_engine::recovery() {
             }
           }
         }
+	std::cout << "UPDATE OP successfully undone!!!" << std::endl;
         break;
 
       default:

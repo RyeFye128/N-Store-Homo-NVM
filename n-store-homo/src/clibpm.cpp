@@ -1,5 +1,5 @@
 // clibpm
-
+#include <iostream>
 #include "clibpm.h"
 
 std::mutex pmp_mutex;
@@ -374,7 +374,7 @@ void *pmemalloc_init(const char *path, size_t size) {
    */
   pmemalloc_recover(pmp);
   pmemalloc_coalesce(pmp);
-
+  //std::cout << "Persistent memory pool starts at: " << std::addressof(pmp) << " and stops at " <<std::addressof(pmp) + sizeof(pmp) << std::endl;
   return pmp;
 
   out: err = errno;
@@ -479,6 +479,7 @@ void *pmemalloc_reserve(size_t size) {
         }
 
         prev_clp = clp;
+	//std::cout << "Allocating memory at " << std::addressof(ptr) << std::endl;
         return ABS_PTR(ptr);
       }
     }
@@ -513,7 +514,7 @@ void pmemalloc_activate_helper(void *abs_ptr) {
   sz = clp->size & ~PMEM_STATE_MASK;
 
   pmem_persist(abs_ptr, clp->size - PMEM_CHUNK_SIZE, 0);
-
+  
   clp->size = sz | PMEM_STATE_ACTIVE;
   pmem_persist(clp, sizeof(*clp), 0);
 }

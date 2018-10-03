@@ -97,6 +97,7 @@ class plist {
 
     index = _size;
     _size++;
+    //std::cout << "plist.h - Tail address " << std::addressof(tail) << std::endl;
     return index;
   }
 
@@ -192,7 +193,7 @@ class plist {
 
   void display(void) {
     struct node* np = (*head);
-
+    int num = 0;
     if (np == NULL) {
       std::cout << "empty list" << std::endl;
       return;
@@ -202,7 +203,9 @@ class plist {
       std::cout << np->val << '\n';
       //printf("%p %s", np->val, np->val);
       np = np->next;
+      num++;
     }
+    std::cout << "Log entries: " << num << std::endl;
     std::cout << std::endl;
 
   }

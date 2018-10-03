@@ -1,0 +1,23 @@
+pin path: /home/ryan/MastersProject/n-store-homo/pin-3.7-97619-g0d0c92f4f-gcc-linux
+
+make all TARGET=intel64
+<pin path> -t <shared library> '-- /bin/ls'
+
+shared libary is created by pin
+
+To run pin and record the ins count, and store in the nstore directory:
+../pin/pin -t /home/ryan/MastersProject/n-store-homo/pin/source/tools/ManualExamples/obj-intel64/inscount0.so -- /home/ryan/MastersProject/n-store-homo/src/nstore.so
+
+To run pin and record the memallocs:
+../pin/pin -t /home/ryan/MastersProject/n-store-homo/pin/source/tools/ManualExamples/obj-intel64/malloctrace.so -o memalloctrace.log -- /home/ryan/MastersProject/n-store-homo/src/run.sh
+
+To run pin and record R/W
+../pin/pin -t /home/ryan/MastersProject/n-store-homo/pin/source/tools/ManualExamples/obj-intel64/pinatrace.so -- /home/ryan/MastersProject/n-store-homo/src/run.sh
+
+address at 0x7... seem to be used regardless of program contents.
+
+TODO: Try to understand the memalloc addresses in the pin trace
+
+notes
+
+

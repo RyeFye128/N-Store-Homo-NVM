@@ -34,7 +34,7 @@ class usertable_record : public record {
 	die();
       set_varchar(1, val);
   }
-
+  
 };
 
 // USERTABLE
@@ -132,11 +132,10 @@ ycsb_benchmark::ycsb_benchmark(config _conf, unsigned int tid, database* _db,
 //Initial record insertion
 void ycsb_benchmark::load() {
   engine* ee = new engine(conf, tid, db, false);
-  
   schema* usertable_schema = db->tables->at(USER_TABLE_ID)->sptr;
   unsigned int txn_itr;
   status ss(num_keys);
-
+  //std::cout << "Persistent memory pool starts at: " << std::addressof(ee->pmp) << std::endl;
   ee->txn_begin();
   //iterate through all the keys in the database
   if(conf.rebuild_table)
@@ -161,6 +160,7 @@ void ycsb_benchmark::load() {
 
 	     //std::cout << "New record key has a value of " << value << " and a size of " << value.size() << std::endl;
 	    //The record contains a numerical key, from 0 to n.
+	    std::cout << "Creating record with value " << value << std::endl;
 	    record* rec_ptr = new ((record*) pmalloc(sizeof(usertable_record))) usertable_record(usertable_schema, key, value,
 		                          					conf.ycsb_num_val_fields, false);
 	    
@@ -383,6 +383,7 @@ void ycsb_benchmark::print_masterLog()
   Check if the masterlog exists. If it does, then dont write to it - leave it alone. This signifies that
   the current run is intended to be used as the template for fault injection.
   If masterlog doesnt exist, then this is the "first" run that will be used to rebuild the table.
+  TODO: See why we have txn_itr in the rebuild.
 */
 bool ycsb_benchmark::existsMasterLog()
 {
@@ -392,7 +393,7 @@ bool ycsb_benchmark::existsMasterLog()
 
 void ycsb_benchmark::rebuild_table(schema* usertable_schema, unsigned int txn_itr, engine* ee)
 {
-	std::cout << "Begin building table from text! " << usertable_schema << txn_itr << std::endl;
+	std::cout << "Begin building table from text! " << txn_itr << std::endl;
 
 	std::string line;
 	std::string cur_word("");
@@ -466,7 +467,7 @@ void ycsb_benchmark::rebuild_table(schema* usertable_schema, unsigned int txn_it
 			std::string empty;
 			std::string rc("default");
 			int txn_itr = 0;//Dependent on keys. Update when inserting.
-			//TODO:Add macro fault in insert and select.
+			//TODO:Add macro fault for select.
 			switch(op)
 			{
 				case operation_type::Select:
@@ -484,9 +485,10 @@ void ycsb_benchmark::rebuild_table(schema* usertable_schema, unsigned int txn_it
 				break;
 				case operation_type::Insert:
 				{
-					
+					inserts++;
 					engine* ee1 = new engine(conf, tid, db, false);
 					ee1->txn_begin();
+					
 					if (txn_itr % conf.load_batch_size == 0) 
 					{
 		      				ee1->txn_end(true);//clears the log
@@ -495,13 +497,27 @@ void ycsb_benchmark::rebuild_table(schema* usertable_schema, unsigned int txn_it
 	 				}
 					
 					record* rec_ptr = new ((record*) pmalloc(sizeof(usertable_record))) usertable_record(usertable_schema, key, value, conf.ycsb_num_val_fields, false);
+					//std::cout << "Record hex is " << rec_ptr << std::endl;
 					statement st(txn_id, operation_type::Insert, USER_TABLE_ID, rec_ptr);
 					ee1->load(st);
+					/* Crash in the middle of a transaction, but after the insert is commited to the log. Should simply unroll and result in one less key.
+					// If a key isnt added, then update the global key count 
+					*/
+					if(inserts == break_here && conf.break_on_insert && conf.break_macro && conf.macro_break_type == 1)
+					{
+						
+						std::cout << "Breaking at Insert, position " << key << "with value: " << value << " type: mid transaction"<< std::endl;
+						printTable(ee, "Before breaking");
+						ee->recovery();
+						printTable(ee, "After breaking");
+						//conf.num_keys--;
+						
+					}
 					ee1->txn_end(true);
 					//std::cout << "Inserting record via table rebuilding: " << rec_ptr->display() << std::endl;
-					inserts++;
+					
 					if(inserts == conf.num_keys)
-						printTable(ee, "Initial Table");
+						printTable(ee, "Loaded Table");
   					delete ee1;
 					//if (tid == 0)
 	      					//ss.display();

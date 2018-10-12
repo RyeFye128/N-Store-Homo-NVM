@@ -2,7 +2,7 @@
 #!/bin/bash
 make
 #rm -fr /dev/shm/zfile
-./nstore -x20 -k20 -e1 -w -y -p0.50 -u
+./nstore -x20 -k20 -e1 -w -y -p0.90 -u -n -M1 -I7
 # rm -fr /dev/shm/zfile
 #./nstore -x20000 -k10000 -e2 -w -y -p0.5 -u -i
 # n = run and record log

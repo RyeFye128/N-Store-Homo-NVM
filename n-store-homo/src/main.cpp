@@ -210,7 +210,7 @@ namespace storage {
       case 'U':
 	state.break_on_update = true;
 	state.break_on_at = atoi(optarg);
-	std::cout << "Crashing on Update number " << state.break_on_at << std::endl;
+	//std::cout << "Crashing on Update number " << state.break_on_at << std::endl;
         break;
       case 'I':
 	state.break_on_insert = true;

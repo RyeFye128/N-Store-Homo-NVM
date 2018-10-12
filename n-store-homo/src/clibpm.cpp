@@ -213,7 +213,8 @@ void check() {
 }
 
 // pmemalloc_recover -- recover after a possible crash
-static void pmemalloc_recover(void* pmp) {
+void pmemalloc_recover(void* pmp) {
+  std::cout << "In pool recovery!!!" << std::endl;
   struct clump *clp;
 
   DEBUG("pmp=0x%lx", pmp);
@@ -236,6 +237,7 @@ static void pmemalloc_recover(void* pmp) {
     clp = (struct clump *) ((uintptr_t) clp + sz);
     DEBUG("next clp %lx, offset 0x%lx", clp, REL_PTR(clp));
   }
+  std::cout << "Completed pool recovery!!!" << std::endl;
 }
 
 // pmemalloc_coalesce -- find adjacent free blocks and coalesce across pool

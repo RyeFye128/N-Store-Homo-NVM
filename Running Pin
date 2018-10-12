@@ -14,10 +14,16 @@ To run pin and record the memallocs:
 To run pin and record R/W
 ../pin/pin -t /home/ryan/MastersProject/n-store-homo/pin/source/tools/ManualExamples/obj-intel64/pinatrace.so -- /home/ryan/MastersProject/n-store-homo/src/run.sh
 
+
+
 address at 0x7... seem to be used regardless of program contents.
 
 TODO: Try to understand the memalloc addresses in the pin trace
 
 notes
 
+pin uses some strange compiler thing, and does not support chrono 
 
+
+The gap in memory R/W always accompanies a strange ins that not even pin can pickup. it omits the memop id and just does the timestamp, but only one op, not a pair.
+The memory gap spans the entire benchmark.

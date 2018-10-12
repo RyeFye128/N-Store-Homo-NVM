@@ -1,14 +1,18 @@
 // YCSB BENCHMARK
 
 #include "ycsb_benchmark.h"
-#include <ctime>
+#include <chrono>
 
 #include <iostream>//rac
 #include <fstream>//rac
 
-int reads, updates, records;//rac
+using namespace std::chrono;
 
+int reads, updates, records;//rac
+std::chrono::high_resolution_clock m_clock;
 std::ofstream recorder("currentLog.txt");//log per instance, rac
+//std::ofstream updateCount("updates.txt");//records update nums so rebuilding via updates knows when its done.
+//std::ofstream timestamps("timestamps.txt"); //timestamps, rac
 
 
 namespace storage {
@@ -160,7 +164,9 @@ void ycsb_benchmark::load() {
 
 	     //std::cout << "New record key has a value of " << value << " and a size of " << value.size() << std::endl;
 	    //The record contains a numerical key, from 0 to n.
-	    std::cout << "Creating record with value " << value << std::endl;
+	    
+        
+	    std::cout << "Creating record with value " << value[3] << " and timestamp: "  << ycsb_benchmark::getSystemTime() << std::endl;
 	    record* rec_ptr = new ((record*) pmalloc(sizeof(usertable_record))) usertable_record(usertable_schema, key, value,
 		                          					conf.ycsb_num_val_fields, false);
 	    
@@ -177,17 +183,20 @@ void ycsb_benchmark::load() {
 	    //sim_crash();
 	    if (tid == 0)
 	      ss.display();
+
+	    std::cout << "Record insert completed at " <<  ycsb_benchmark::getSystemTime() << std::endl;
+	    //std::cout << std::endl;
 	  }
 	
   std::cout << conf.ycsb_num_val_fields << " Fields in this " << std::endl;//prints the number of ???
   ee->txn_end(true);
- 
+  
   delete ee;}
 }
 /* Updates records equal to the amount of tuples allowed per transaction.
 */
 void ycsb_benchmark::do_update(engine* ee) {
-
+   
 // UPDATE
   std::string updated_val(conf.ycsb_field_size, 'u');
   int zipf_dist_offset = txn_id * conf.ycsb_tuples_per_txn;
@@ -197,9 +206,9 @@ void ycsb_benchmark::do_update(engine* ee) {
   TIMER(ee->txn_begin());
 
   for (int stmt_itr = 0; stmt_itr < conf.ycsb_tuples_per_txn; stmt_itr++) {
-
+    
     int key = zipf_dist[zipf_dist_offset + stmt_itr];
-
+    //std::cout << "conventionally updating record " << key << std::endl;
     record* rec_ptr = new ((record*) pmalloc(sizeof(usertable_record))) usertable_record(user_table_schema, key, updated_val,
                                            					conf.ycsb_num_val_fields,
                                            					conf.ycsb_update_one);
@@ -219,7 +228,9 @@ void ycsb_benchmark::do_update(engine* ee) {
     {
    	 recorder << "Update," + std::to_string(key) + "," + updated_val[0] + "," << std::endl;
     }
+    //std::cout << "Done Update at time " << ycsb_benchmark::getSystemTime() << std::endl;
     //rec_ptr->display();
+    //std::cout << "Done conventionally updating record " << key << std::endl;
   }
   //std::cout << "Done updating some stuff...";
   TIMER(ee->txn_end(true));
@@ -406,6 +417,8 @@ void ycsb_benchmark::rebuild_table(schema* usertable_schema, unsigned int txn_it
         int inserts = 0;
 	int break_here = conf.break_on_at;
 	std::ifstream log("MasterLog.txt");
+	
+	//std::ifstream updateCount("MasterLogUpdates.txt");
 	if(log.is_open())//if the file is open
 	{
 		/*For each line, go through and set the variables:
@@ -486,6 +499,7 @@ void ycsb_benchmark::rebuild_table(schema* usertable_schema, unsigned int txn_it
 				case operation_type::Insert:
 				{
 					inserts++;
+					//std::cout << "Artificailly inserting record " << key << std::endl;
 					engine* ee1 = new engine(conf, tid, db, false);
 					ee1->txn_begin();
 					
@@ -506,25 +520,28 @@ void ycsb_benchmark::rebuild_table(schema* usertable_schema, unsigned int txn_it
 					if(inserts == break_here && conf.break_on_insert && conf.break_macro && conf.macro_break_type == 1)
 					{
 						
-						std::cout << "Breaking at Insert, position " << key << "with value: " << value << " type: mid transaction"<< std::endl;
-						printTable(ee, "Before breaking");
+						std::cout << "Breaking at Insert, position " << key << " with value: " << value[3] << " type: mid transaction"<< std::endl;
+						printTable(ee, "Before breaking: Undoing insert");
 						ee->recovery();
-						printTable(ee, "After breaking");
+						std::cout << "Recovering. Insert undone at position " << key << std::endl;
+						printTable(ee, "Recovered");
 						//conf.num_keys--;
 						
 					}
 					ee1->txn_end(true);
 					//std::cout << "Inserting record via table rebuilding: " << rec_ptr->display() << std::endl;
-					
+					//std::cout << "Completed Artificailly inserting record " << key << std::endl;
 					if(inserts == conf.num_keys)
 						printTable(ee, "Loaded Table");
   					delete ee1;
 					//if (tid == 0)
 	      					//ss.display();
+					//std::cout << "Completed Artificailly inserting record " << key << std::endl;
 				}
 				break;
 				case operation_type::Update:
 				{
+					//std::cout << "Artificailly updating record " << key << std::endl;
 					updates++;
 					std::string updated_val(conf.ycsb_field_size, value[0]);
 					
@@ -553,7 +570,16 @@ void ycsb_benchmark::rebuild_table(schema* usertable_schema, unsigned int txn_it
 					   TIMER(ee->txn_end(false));
 					   return;
 					 }
-					TIMER(ee->txn_end(true));
+					
+					//std::cout << "Done Artificailly updating record " << key << std::endl;
+/*  In original benchmark, the transaction is ended only when the number of updates meets the tuples_per_txn value. So, we check for multiples of that number against the current
+    update count to maintain that property.
+
+*/
+					if(updates%conf.ycsb_tuples_per_txn == 0)
+						TIMER(ee->txn_end(true));
+						//std::cout << "Done with updates...." << std::endl;
+					
 				}
 				break;
 				default:
@@ -565,7 +591,7 @@ void ycsb_benchmark::rebuild_table(schema* usertable_schema, unsigned int txn_it
 		}
 		
   	        
-  
+  		
 		log.close();
 	}
 	
@@ -591,9 +617,25 @@ operation_type ycsb_benchmark::getOpType(std::string op)
 		return operation_type::Insert;
 	return operation_type::Select;
 }
+
+// System clock variables
+timeval curTime;
+int milli;
+char currentTime[84] = "";
+char buffer [80];
+
+char* ycsb_benchmark::getSystemTime()
+{
+	gettimeofday(&curTime, NULL);
+	milli = curTime.tv_usec;
+	strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", localtime(&curTime.tv_sec));
+	sprintf(currentTime, "%s:%d", buffer, milli);
+	return currentTime;
+}
 //--------------------RAC Code end------------------------------------
 
 void ycsb_benchmark::execute() {
+  std::cout << "Starting at time " << ycsb_benchmark::getSystemTime() << std::endl;
   engine* ee = new engine(conf, tid, db, conf.read_only);
   unsigned int txn_itr;
   status ss(num_txns);
@@ -625,20 +667,25 @@ void ycsb_benchmark::execute() {
 	      ss.display();
 	  }
 	}
-  printTable(ee, "Table after benchmark complete");
+  //printTable(ee, "Table after benchmark complete");
   std::cout << "duration :: " << tm->duration() << std::endl;
   if(!conf.rebuild_table)
+  {
 	std::cout << "Total reads: " << reads << " Total updates: " << updates << " Total Records: " << records <<  std::endl;
+	//updateCount << std::to_string(updates) << std::endl;
+  }
+  
   print_masterLog();
 
   
   if(conf.record_masterLog && conf.record_cur)//Master log doesnt exist, or is empty, the currentlog is the master log
   { 
     rename("currentLog.txt", "MasterLog.txt");
+    rename("updates.txt", "correctUpdates.txt");
   }
-  
+  //updateCount.close();
   recorder.close();
-
+  std::cout << "Ending at time " << ycsb_benchmark::getSystemTime() << std::endl;
   delete ee;
 }
 

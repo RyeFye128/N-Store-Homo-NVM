@@ -15,6 +15,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/param.h>
+#include <iostream>
 
 #include <mutex>
 #include "utils.h"
@@ -105,10 +106,14 @@ static inline void pmem_flush_cache(void *addr, size_t len,
                                     __attribute((unused)) int flags) {
   uintptr_t uptr = (uintptr_t) addr & ~(ALIGN - 1);
   uintptr_t end = (uintptr_t) addr + len;
-
+  //int i = 0;
   /* loop through 64B-aligned chunks covering the given range */
   for (; uptr < end; uptr += ALIGN)
+  {
     __builtin_ia32_clflush((void *) uptr);
+    //i++;
+  }
+  //std::cout << "Cache flushed " << i << " time(s)" << std::endl;
 }
 
 static inline void pmem_persist(void *addr, size_t len, int flags) {
@@ -126,6 +131,7 @@ void *pmemalloc_reserve(size_t size);
 void pmemalloc_activate(void *abs_ptr_);
 void pmemalloc_free(void *abs_ptr_);
 void pmemalloc_check(const char *path);
+void pmemalloc_recover(void* pmp);
 unsigned int get_next_pp();
 
 }

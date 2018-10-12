@@ -31,26 +31,44 @@ END_LEGAL */
 /*
  *  This file contains an ISA-portable PIN tool for tracing memory accesses.
  */
+
 #include <stdio.h>
 #include "pin.H"
-
+#include <ctime>
 
 FILE * trace;
+using namespace std;
+timeval curTime;
 
+int milli;
+char currentTime[84] = "";
+char buffer [80];
+
+char* getSystemTime()
+{
+	gettimeofday(&curTime, NULL);
+	milli = curTime.tv_usec;
+	strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", localtime(&curTime.tv_sec));
+	sprintf(currentTime, "%s:%d", buffer, milli);
+	return currentTime;
+}
 // Print a memory read record
 VOID RecordMemRead(VOID * ip, VOID * addr)
 {
-
-    	fprintf(trace,"%p: R %p\n", ip, addr);
+    	fprintf(trace,"%p: R %p : Time %s\n", ip, addr, getSystemTime());
 }
+
 
 // Print a memory write record
 VOID RecordMemWrite(VOID * ip, VOID * addr)
 {
-   
-    	fprintf(trace,"%p: W %p\n", ip, addr);
+    	fprintf(trace,"%p: W %p : Time %s\n", ip, addr, getSystemTime());
 }
 
+VOID anythingElse(VOID * ip, VOID * addr)
+{
+    	fprintf(trace,"%p: X %p : Time %s\n", ip, addr, getSystemTime());
+}
 // Is called for every instruction and instruments reads and writes
 VOID Instruction(INS ins, VOID *v)
 {
@@ -75,7 +93,7 @@ VOID Instruction(INS ins, VOID *v)
         // Note that in some architectures a single memory operand can be 
         // both read and written (for instance incl (%eax) on IA-32)
         // In that case we instrument it once for read and once for write.
-        if (INS_MemoryOperandIsWritten(ins, memOp))
+        else if (INS_MemoryOperandIsWritten(ins, memOp))
         {
             INS_InsertPredicatedCall(
                 ins, IPOINT_BEFORE, (AFUNPTR)RecordMemWrite,
@@ -83,6 +101,14 @@ VOID Instruction(INS ins, VOID *v)
                 IARG_MEMORYOP_EA, memOp,
                 IARG_END);
         }
+	else 
+	{
+		INS_InsertPredicatedCall(
+                ins, IPOINT_BEFORE, (AFUNPTR)anythingElse,
+                IARG_INST_PTR,
+                IARG_MEMORYOP_EA, memOp,
+                IARG_END);
+	}
     }
 }
 
@@ -90,6 +116,7 @@ VOID Fini(INT32 code, VOID *v)
 {
     fprintf(trace, "#eof\n");
     fclose(trace);
+    
 }
 
 /* ===================================================================== */
@@ -111,8 +138,7 @@ int main(int argc, char *argv[])
 {
     if (PIN_Init(argc, argv)) return Usage();
 
-    trace = fopen("pinatrace.out", "w");
-
+    trace = fopen("pinatrace.out", "w");	
     INS_AddInstrumentFunction(Instruction, 0);
     PIN_AddFiniFunction(Fini, 0);
 

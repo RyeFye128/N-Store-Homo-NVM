@@ -36,6 +36,7 @@ class ycsb_benchmark : public benchmark {
   bool existsMasterLog();//RAC
   void rebuild_table(schema* usertable_schema, unsigned int txn_itr, engine* ee);//RAC
   operation_type getOpType(std::string op);//RAC
+  char* getSystemTime();//RAC
 
   // Table Ids
   static constexpr int USER_TABLE_ID = 0;

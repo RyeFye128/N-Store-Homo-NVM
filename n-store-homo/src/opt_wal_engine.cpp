@@ -242,7 +242,7 @@ void opt_wal_engine::load(const statement& st) {
   char* entry = (char*) pmalloc(entry_str_sz*sizeof(char));//new char[entry_str_sz];
   memcpy(entry, entry_str.c_str(), entry_str_sz);
   pmemalloc_activate(entry);
-  std::cout << "INSERT - Log entry added at address " << std::addressof(entry) << std::endl;
+  //std::cout << "INSERT - Log entry added at address " << std::addressof(entry) << std::endl;
   pm_log->push_back(entry);
 
   // Activate new record
@@ -263,9 +263,11 @@ void opt_wal_engine::load(const statement& st) {
 
 void opt_wal_engine::txn_begin() {
 	//std::cout << "The world is a lie" << std::endl;
-	std::cout << "opt_wal_engine - Transaction begin " << std::endl;
+	//std::cout << "opt_wal_engine - Transaction begin " << std::endl;
 
 }
+
+
 
 void opt_wal_engine::txn_end(__attribute__((unused)) bool commit) {
 
@@ -283,12 +285,12 @@ void opt_wal_engine::txn_end(__attribute__((unused)) bool commit) {
   for (char* ptr : undo_log)
     delete ptr;
   pm_log->clear();
-  std::cout << "opt_wal_engine - Transaction end " << std::endl;
+ // std::cout << "opt_wal_engine - Transaction end " << std::endl;
 
 }
 
 void opt_wal_engine::recovery() {
-  
+ 
   LOG_INFO("OPT WAL recovery");
   std::cout << "In recovery" << std::endl;
   std::vector<char*> undo_log = pm_log->get_data();
@@ -421,7 +423,9 @@ void opt_wal_engine::recovery() {
         std::cout << "Invalid operation type" << op_type << std::endl;
         break;
     }
-
+    
+   
+    
     delete ptr;
   }
 
@@ -429,7 +433,9 @@ void opt_wal_engine::recovery() {
   pm_log->clear();
 
   rec_t.end();
+  pmemalloc_recover(pmp);
   std::cout << "OPT_WAL :: Recovery duration (ms) : " << rec_t.duration() << std::endl;
+  
 
 }
 

@@ -15,6 +15,7 @@
 #include "timer.h"
 #include "serializer.h"
 
+
 namespace storage {
 
 class opt_wal_engine : public engine_api {
@@ -34,6 +35,7 @@ class opt_wal_engine : public engine_api {
   void txn_end(bool commit);
 
   void recovery();
+  
 
   //private:
   const config& conf;
